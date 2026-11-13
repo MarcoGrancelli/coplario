@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coplario: explorador de coplas tradicionales</title>
+<meta name="author" content="Marco Grancelli">
+<meta name="description" content="Explorador de coplas tradicionales: 39.418 coplas de España y América para buscar por palabra, rima, país y tema. Cada una con su fuente: libro, autor, año y página.">
+<meta property="og:title" content="Coplario: explorador de coplas tradicionales">
+<meta property="og:description" content="39.418 coplas tradicionales de España y América, cada una con su fuente.">
+<meta property="og:type" content="website">
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<script>try { document.documentElement.dataset.theme = JSON.parse(localStorage.getItem('compartida:coplas-tema')) || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,700;1,400&family=Alegreya+Sans:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="coplario.css?v=8484a4bd">
+</head>
+<body>
+<header class="cab">
+  <div class="cab-in">
+    <a class="marca" href="index.html" id="inicio" title="Volver al inicio">
+      <img src="logo.svg" width="42" height="42" alt="">
+      <div><h1>Coplario</h1><p>explorador de coplas tradicionales</p></div>
+    </a>
+    <form class="buscador" id="formBuscar" role="search">
+      <input id="q" type="search" placeholder="Buscar coplas por palabra" autocomplete="off" aria-label="Buscar coplas por palabra">
+      <button type="button" id="btnOpciones" aria-expanded="false" aria-controls="opciones">Opciones</button>
+    </form>
+    <nav class="cab-nav" aria-label="Secciones">
+      <button type="button" id="btnAzar" title="Mostrar una copla elegida al azar">Una al azar</button>
+      <a href="acerca.html">Acerca</a>
+      <button type="button" id="btnTema" aria-label="Cambiar entre tema claro y oscuro" title="Tema claro u oscuro">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M5.3 5.3L7 7M17 17l1.7 1.7M18.7 5.3L17 7M7 17l-1.7 1.7"/></svg>
+      </button>
+    </nav>
+    <div class="opciones" id="opciones" hidden>
+      <p>No hace falta poner tildes ni mayúsculas. "mar" encuentra mar, marinero y Mariquita, pero no amar. Con comillas se busca una "frase exacta" y con un guion se excluye una palabra: paloma -blanca.</p>
+      <label><input type="checkbox" id="palabraCompleta"> Solo la palabra completa ("mar" no encuentra marinero)</label>
+      <label><input type="checkbox" id="buscarTitulo"> Buscar también en títulos de canciones y secciones del libro</label>
+    </div>
+  </div>
+  <div class="guarda"></div>
+</header>
+
+<div id="carga" class="estado-carga">Cargando las coplas…</div>
+
+<div class="cuerpo" id="app" hidden>
+  <div class="telon" id="telon" hidden></div>
+  <aside id="panel" aria-label="Filtros">
+    <div class="hoja-cab"><span>Filtros</span><button type="button" id="cerrarPanel" aria-label="Cerrar los filtros">×</button></div>
+    <div id="facetas">
+      <details class="faceta" data-bloque="rima">
+        <summary><span>Rima</span><span class="fn"></span></summary>
+        <div class="fc">
+          <div class="modo-rima" id="modoRima" role="group" aria-label="Tipo de rima">
+            <button type="button" data-modo="asonante" aria-pressed="true">Asonante</button>
+            <button type="button" data-modo="consonante" aria-pressed="false">Consonante</button>
+          </div>
+          <div class="campo"><input id="rima" placeholder="Rima con… (ej. paloma)" aria-label="Palabra o terminación con la que rima el último verso" autocomplete="off"></div>
+          <p class="nota" id="notaRima"></p>
+          <div class="chips-rima" id="chipsRima" aria-label="Rimas más frecuentes en estos resultados"></div>
+        </div>
+      </details>
+      <details class="faceta" data-bloque="pv">
+        <summary><span>Empieza con</span><span class="fn"></span></summary>
+        <div class="fc">
+          <div class="campo"><input id="pv" placeholder="ej. ya con esta" aria-label="El primer verso empieza con" autocomplete="off"></div>
+          <p class="nota">Encuentra las coplas cuyo primer verso empieza así: sirve para fórmulas de comienzo.</p>
+        </div>
+      </details>
+      <div class="faceta faceta-fija" data-bloque="conPagina">
+        <label class="opcion"><input type="checkbox" id="conPagina"><span>Solo las que se pueden ver en el libro</span><span class="n" id="nConPagina"></span></label>
+        <p class="nota">Las que tienen la imagen de su página: en esas coplas aparece el botón "Ver en el libro".</p>
+      </div>
+    </div>
+    <div class="hoja-pie"><button type="button" class="btn primario" id="verResultados">Ver coplas</button></div>
+  </aside>
+
+  <main>
+    <section class="bienvenida" id="bienvenida" hidden>
+      <div class="ejemplos">Probá con:
+        <button type="button" data-ej='{"q":"paloma"}'>paloma</button>
+        <button type="button" data-ej='{"rima":"corazón","modoRima":"consonante"}'>riman con corazón</button>
+        <button type="button" data-ej='{"pv":"ya con esta"}'>empiezan con "ya con esta"</button>
+        <button type="button" data-ej='{"pais":["Argentina"]}'>de Argentina</button>
+        <button type="button" data-ej='{"tipo":["seguidilla simple","seguidilla compuesta"]}'>seguidillas</button>
+      </div>
+    </section>
+    <div class="herramientas">
+      <button type="button" class="btn btn-filtros" id="btnFiltros" aria-expanded="false">Filtros</button>
+      <div class="contador" aria-live="polite">
+        <span><strong id="nRes">0</strong> <span id="nResTxt">coplas</span></span>
+        <select id="orden" aria-label="Orden de las coplas">
+          <option value="libro">orden: como en el libro</option>
+          <option value="az">orden: primer verso de la A a la Z</option>
+          <option value="azar">orden: mezcladas</option>
+        </select>
+      </div>
+    </div>
+    <div class="activos" id="activos"></div>
+    <div id="resultados" aria-label="Coplas encontradas"></div>
+    <button type="button" class="btn cargar-mas" id="cargarMas" hidden>Mostrar más</button>
+  </main>
+</div>
+
+<footer class="pie">
+  <div class="guarda"></div>
+  <div class="pie-in">
+    <b>Coplario</b>
+    <span>Creado por Marco Grancelli</span>
+    <a href="acerca.html">Acerca del sitio y sus fuentes</a>
+    <span>Versión 1.0, actualizada el 5 de noviembre de 2026</span>
+    <span class="redes"><a href="https://www.instagram.com/marcograncelli/" target="_blank" rel="noopener me">Instagram</a> · <a href="https://www.facebook.com/Marcograncellimusica" target="_blank" rel="noopener me">Facebook</a> · <a href="https://linktr.ee/marcograncelli" target="_blank" rel="noopener me">Música y más enlaces</a></span>
+  </div>
+</footer>
+<button type="button" class="subir" id="subir" hidden aria-label="Volver arriba">↑</button>
+<div class="aviso" id="aviso" role="status"></div>
+
+<script>
+// Carga de datos: el índice y los pedazos de coplas en paralelo; el detalle de cada copla
+// (texto antes de corregir, procedencia, motivo de la duda) se pide recién cuando se muestra.
+// Con etiquetas <script> en vez de fetch, así la carpeta también se abre desde el disco.
+(function () {
+  "use strict";
+  const V = '222531d60d', BASE = '';
+  const carga = () => document.getElementById('carga');
+  const cargarScript = src => new Promise((ok, mal) => {
+    const s = document.createElement('script');
+    s.src = BASE + 'datos/' + src + '?v=' + V; s.onload = ok; s.onerror = () => mal(new Error(src));
+    document.head.appendChild(s);
+  });
+  let indice, piezas = [], hechas = 0;
+  const detalles = [], pedidos = [];
+  window.COPLAS_INDICE = d => { indice = d; };
+  window.COPLAS_PIEZA = (p, filas) => {
+    piezas[p] = filas; hechas++;
+    if (carga()) carga().textContent = 'Cargando las coplas… ' + Math.round(100 * hechas / indice.piezas.length) + '%';
+  };
+  window.COPLAS_DETALLE = (p, filas) => { detalles[p] = filas; };
+  const pieza = i => { let p = 0; while (p + 1 < indice.piezas.length && indice.piezas[p + 1].desde <= i) p++; return p; };
+  const detalle = p => pedidos[p] || (pedidos[p] = cargarScript(indice.piezas[p].detalle).catch(e => { pedidos[p] = null; throw e; }));
+  window.COPLAS_PEDIR_DETALLES = lista => Promise.all([...new Set(lista.map(pieza))].map(detalle)).then(() => i => {
+    const p = pieza(i), d = detalles[p] && detalles[p][i - indice.piezas[p].desde];
+    return d || ['', '', ''];
+  });
+  cargarScript('indice.js')
+    .then(() => Promise.all(indice.piezas.map(p => cargarScript(p.coplas))))
+    .then(() => {
+      const { piezas: _p, total, ...resto } = indice;
+      window.COPLAS_DATOS = { ...resto, registros: [].concat(...piezas) };
+      if (window.COPLAS_DATOS.registros.length !== total) throw new Error('faltan coplas');
+      window.COPLAS_ARRANCAR();
+    })
+    .catch(e => { if (carga()) carga().textContent = 'No se pudieron cargar las coplas (' + e.message + '). Revisá la conexión y volvé a cargar la página.'; });
+})();
+</script>
+<script>
+"use strict";
+window.COPLAS_ARRANCAR = function () {
+  const D = window.COPLAS_DATOS;
+  const CONTACTO = 'info@marcograncelli.com';      // mail para "Avisar un error"; vacío = no se muestra
+
+  // ---------- utilidades ----------
+  const $ = id => document.getElementById(id);
+  const norm = s => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zñ0-9]+/g, ' ').trim();
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const num = n => { try { return n.toLocaleString('es', { useGrouping: 'always' }); } catch { return n.toLocaleString('es'); } };
+  const leer = (k, def) => { try { const v = localStorage.getItem('compartida:' + k); return v ? JSON.parse(v) : def; } catch { return def; } };
+  const guardar = (k, v) => { try { localStorage.setItem('compartida:' + k, JSON.stringify(v)); } catch { /* sin almacenamiento */ } };
+  let temporizadorAviso;
+  const aviso = t => { const a = $('aviso'); a.textContent = t; a.classList.add('ver'); clearTimeout(temporizadorAviso); temporizadorAviso = setTimeout(() => a.classList.remove('ver'), 2600); };
+  async function copiar(texto) {
+    try { await navigator.clipboard.writeText(texto); return true; }
+    catch {
+      const ta = document.createElement('textarea'); ta.value = texto; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      let ok = false; try { ok = document.execCommand('copy'); } catch { /* nada */ }
+      ta.remove(); return ok;
+    }
+  }
+  function descargar(nombre, texto) {
+    const url = URL.createObjectURL(new Blob(['﻿' + texto], { type: 'text/csv;charset=utf-8' }));
+    const a = document.createElement('a'); a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
+  const ICONO = {
+    copiar: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15V6a2 2 0 0 1 2-2h9"/></svg>',
+    compartir: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3M7.5 7.5L12 3l4.5 4.5M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>',
+    pagina: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6zM14 3v5h5M9 13h7M9 17h7"/></svg>',
+  };
+
+  // ---------- datos ----------
+  const col = Object.fromEntries(D.columnas.map((c, i) => [c, i]));
+  const dic = D.diccionarios;
+  const deDic = (campo, i) => i >= 0 ? dic[campo][i] : '';
+  // los libros se nombran por el título, y después el autor (en cursiva en la lista)
+  const fuentes = D.fuentes.map(f => {
+    const tituloCorto = f.titulo.replace(/\..*$/, '').replace(/:.*$/, '') + (f.tomo ? ' (' + f.tomo.split(':')[0] + ')' : '');
+    const autorCorto = f.autor.split(' (')[0].replace(/^Instituto Andino de Artes Populares \(IADAP\).*/, 'IADAP');
+    return { ...f, tituloCorto, autorCorto, etiqueta: tituloCorto + ' - ' + autorCorto, conImagen: !!(D.paginas || {})[f.codigo] };
+  });
+  const fuentePorCodigo = Object.fromEntries(fuentes.map(f => [f.codigo, f]));
+  const TEMAS = ["🌹 Piropos y requiebros","❤️ Amor y declaraciones","❤️ Amor y declaraciones","❤️ Amor y declaraciones","🌙 Serenatas, despedidas y ausencias","🌙 Serenatas, despedidas y ausencias","💔 Celos, desdenes y penas de amor","💔 Celos, desdenes y penas de amor","😢 Penas y tristezas","❤️ Amor y declaraciones","👪 Familia","💌 Consejos de amor","👪 Familia","🙏 Religión","🦉 Sentencias y moral","💃 Fiesta, baile y vino","💃 Fiesta, baile y vino","😄 Humor y picardía","💃 Fiesta, baile y vino","⚔️ Valentones, soldados y presos","⚔️ Valentones, soldados y presos","📜 Historia y política","🏞️ Lugares y costumbres","Varias","Varias","Varias","🧩 Adivinanzas y canciones encadenadas","📜 Historia y política","🙏 Religión","❤️ Amor y declaraciones","😢 Penas y tristezas","💔 Celos, desdenes y penas de amor","💔 Celos, desdenes y penas de amor","🌙 Serenatas, despedidas y ausencias","🌙 Serenatas, despedidas y ausencias","🦉 Sentencias y moral","🏞️ Lugares y costumbres","😄 Humor y picardía","🎤 Payadas y contrapunto","🧩 Adivinanzas y canciones encadenadas","⚔️ Valentones, soldados y presos","👪 Familia","👪 Familia","🌹 Piropos y requiebros","😢 Penas y tristezas","💔 Celos, desdenes y penas de amor","🌙 Serenatas, despedidas y ausencias","💔 Celos, desdenes y penas de amor","💌 Consejos de amor","💃 Fiesta, baile y vino","⚔️ Valentones, soldados y presos","🎤 Payadas y contrapunto","😄 Humor y picardía","🏞️ Lugares y costumbres","🙏 Religión","🦉 Sentencias y moral","📜 Historia y política","Varias","Varias","🧩 Adivinanzas y canciones encadenadas","Varias","Varias","Varias","💃 Fiesta, baile y vino","🌹 Piropos y requiebros","❤️ Amor y declaraciones","❤️ Amor y declaraciones","💃 Fiesta, baile y vino","🌙 Serenatas, despedidas y ausencias","💔 Celos, desdenes y penas de amor","😢 Penas y tristezas","💌 Consejos de amor","👪 Familia","🙏 Religión","🦉 Sentencias y moral","🦉 Sentencias y moral","⚒️ Oficios y trabajo","📜 Historia y política","⚒️ Oficios y trabajo","⚔️ Valentones, soldados y presos","⚔️ Valentones, soldados y presos","⚒️ Oficios y trabajo","⚔️ Valentones, soldados y presos","😄 Humor y picardía","🌹 Piropos y requiebros","❤️ Amor y declaraciones","❤️ Amor y declaraciones","❤️ Amor y declaraciones","❤️ Amor y declaraciones","❤️ Amor y declaraciones","❤️ Amor y declaraciones","❤️ Amor y declaraciones","❤️ Amor y declaraciones","🌙 Serenatas, despedidas y ausencias","🌹 Piropos y requiebros","❤️ Amor y declaraciones","❤️ Amor y declaraciones","❤️ Amor y declaraciones","❤️ Amor y declaraciones","❤️ Amor y declaraciones","💔 Celos, desdenes y penas de amor","🌙 Serenatas, despedidas y ausencias","💔 Celos, desdenes y penas de amor","❤️ Amor y declaraciones","💔 Celos, desdenes y penas de amor","🌙 Serenatas, despedidas y ausencias","💔 Celos, desdenes y penas de amor","🌙 Serenatas, despedidas y ausencias","💔 Celos, desdenes y penas de amor","❤️ Amor y declaraciones","💔 Celos, desdenes y penas de amor","💔 Celos, desdenes y penas de amor","❤️ Amor y declaraciones","❤️ Amor y declaraciones","💔 Celos, desdenes y penas de amor","❤️ Amor y declaraciones","❤️ Amor y declaraciones","❤️ Amor y declaraciones","💔 Celos, desdenes y penas de amor","💔 Celos, desdenes y penas de amor","💔 Celos, desdenes y penas de amor","💔 Celos, desdenes y penas de amor","🌙 Serenatas, despedidas y ausencias","💔 Celos, desdenes y penas de amor","💌 Consejos de amor","❤️ Amor y declaraciones","💔 Celos, desdenes y penas de amor","😄 Humor y picardía","😄 Humor y picardía","😄 Humor y picardía","😄 Humor y picardía","😄 Humor y picardía","😄 Humor y picardía","😄 Humor y picardía","🐦 Animales y naturaleza","🐦 Animales y naturaleza","🐦 Animales y naturaleza","🐦 Animales y naturaleza","⚒️ Oficios y trabajo","🐦 Animales y naturaleza","⚔️ Valentones, soldados y presos","😄 Humor y picardía","😄 Humor y picardía","😢 Penas y tristezas","😢 Penas y tristezas","😄 Humor y picardía","🏞️ Lugares y costumbres","🏞️ Lugares y costumbres","🏞️ Lugares y costumbres","🌙 Serenatas, despedidas y ausencias","💃 Fiesta, baile y vino","💃 Fiesta, baile y vino","😄 Humor y picardía","🦉 Sentencias y moral","🦉 Sentencias y moral","🦉 Sentencias y moral","😄 Humor y picardía","🐦 Animales y naturaleza","🙏 Religión","🙏 Religión","🙏 Religión","🙏 Religión","🙏 Religión","🙏 Religión","🙏 Religión","😄 Humor y picardía","😢 Penas y tristezas","😢 Penas y tristezas","🦉 Sentencias y moral","Varias","😢 Penas y tristezas","💃 Fiesta, baile y vino","💃 Fiesta, baile y vino","⚔️ Valentones, soldados y presos","🏞️ Lugares y costumbres","😄 Humor y picardía","📜 Historia y política","📜 Historia y política","😄 Humor y picardía","⚔️ Valentones, soldados y presos","Varias","😄 Humor y picardía","👪 Familia","😄 Humor y picardía","😄 Humor y picardía","🧩 Adivinanzas y canciones encadenadas","🧩 Adivinanzas y canciones encadenadas","🧩 Adivinanzas y canciones encadenadas","🧩 Adivinanzas y canciones encadenadas","🧩 Adivinanzas y canciones encadenadas","Varias","🙏 Religión","🦉 Sentencias y moral","💌 Consejos de amor","🌹 Piropos y requiebros","❤️ Amor y declaraciones","❤️ Amor y declaraciones","🌙 Serenatas, despedidas y ausencias","🌙 Serenatas, despedidas y ausencias","❤️ Amor y declaraciones","💔 Celos, desdenes y penas de amor","💔 Celos, desdenes y penas de amor","💔 Celos, desdenes y penas de amor","😄 Humor y picardía","😄 Humor y picardía","🏞️ Lugares y costumbres","⚔️ Valentones, soldados y presos","⚔️ Valentones, soldados y presos","⚔️ Valentones, soldados y presos","⚒️ Oficios y trabajo","⚔️ Valentones, soldados y presos","⚒️ Oficios y trabajo","⚒️ Oficios y trabajo","💃 Fiesta, baile y vino","Varias","❤️ Amor y declaraciones","💔 Celos, desdenes y penas de amor","💃 Fiesta, baile y vino","🦉 Sentencias y moral","🙏 Religión","📜 Historia y política","⚒️ Oficios y trabajo","🏞️ Lugares y costumbres","❤️ Amor y declaraciones","😄 Humor y picardía","❤️ Amor y declaraciones","😄 Humor y picardía","🧩 Adivinanzas y canciones encadenadas","❤️ Amor y declaraciones","😄 Humor y picardía","🧩 Adivinanzas y canciones encadenadas","🙏 Religión","🦉 Sentencias y moral","💔 Celos, desdenes y penas de amor","❤️ Amor y declaraciones","💃 Fiesta, baile y vino","🌙 Serenatas, despedidas y ausencias","💃 Fiesta, baile y vino","⚒️ Oficios y trabajo","⚒️ Oficios y trabajo","⚒️ Oficios y trabajo","⚔️ Valentones, soldados y presos","😄 Humor y picardía","😄 Humor y picardía","😄 Humor y picardía","Varias","👪 Familia","🙏 Religión","Varias","Varias","Varias","Varias","Varias","Varias","Varias","💃 Fiesta, baile y vino","Varias","🐦 Animales y naturaleza","❤️ Amor y declaraciones","⚔️ Valentones, soldados y presos","Varias","⚒️ Oficios y trabajo","🐦 Animales y naturaleza","🐦 Animales y naturaleza","Varias","🐦 Animales y naturaleza","🐦 Animales y naturaleza","🐦 Animales y naturaleza","👪 Familia","💃 Fiesta, baile y vino","🐦 Animales y naturaleza","🦉 Sentencias y moral","💃 Fiesta, baile y vino","🐦 Animales y naturaleza","⚒️ Oficios y trabajo","🐦 Animales y naturaleza","Varias","Varias","🙏 Religión","🙏 Religión","🙏 Religión","🙏 Religión","🙏 Religión","Varias","👪 Familia","⚔️ Valentones, soldados y presos","💃 Fiesta, baile y vino","Varias","🐦 Animales y naturaleza","🌙 Serenatas, despedidas y ausencias","Varias","🦉 Sentencias y moral","⚔️ Valentones, soldados y presos","👪 Familia","🙏 Religión","🌙 Serenatas, despedidas y ausencias","🦉 Sentencias y moral","😄 Humor y picardía","📜 Historia y política","👪 Familia","😄 Humor y picardía","💃 Fiesta, baile y vino","🏞️ Lugares y costumbres","👪 Familia","🌙 Serenatas, despedidas y ausencias","❤️ Amor y declaraciones","Varias","Varias","Varias","Varias","Varias","Varias","Varias","Varias","Varias","Varias","Varias"];        // tema de Coplario de cada sección de libro (temas_coplario.mjs)
+  // para el público, la forma sin las marcas de control ("(probable)", "(rima no confirmada)")
+  const forma = t => (t || 'sin texto').replace(/\s*\(.*\)$/, '');
+  // banderas dibujadas (los emojis de bandera no se ven en Windows)
+  const FRANJAS = (colores, vertical) => colores.map((c, i) => vertical
+    ? `<rect x="${i * 30 / colores.length}" width="${30 / colores.length}" height="20" fill="${c}"/>`
+    : `<rect y="${i * 20 / colores.length}" width="30" height="${20 / colores.length}" fill="${c}"/>`).join('');
+  const BANDERAS = {
+    'España': '<rect width="30" height="20" fill="#c60b1e"/><rect y="5" width="30" height="10" fill="#ffc400"/>',
+    'México': FRANJAS(['#006847', '#fff', '#ce1126'], true) + '<circle cx="15" cy="10" r="2.6" fill="#8a5a2b"/>',
+    'Argentina': FRANJAS(['#74acdf', '#fff', '#74acdf']) + '<circle cx="15" cy="10" r="2.4" fill="#f6b40e"/>',
+    'Ecuador': '<rect width="30" height="20" fill="#ffdd00"/><rect y="10" width="30" height="5" fill="#034ea2"/><rect y="15" width="30" height="5" fill="#ed1c24"/><circle cx="15" cy="10" r="3" fill="#7a5a2a"/>',
+    'Colombia': '<rect width="30" height="20" fill="#fcd116"/><rect y="10" width="30" height="5" fill="#003893"/><rect y="15" width="30" height="5" fill="#ce1126"/>',
+    'Venezuela': FRANJAS(['#ffcc00', '#00247d', '#cf142b']) + '<g fill="#fff"><circle cx="11" cy="10.6" r=".9"/><circle cx="13" cy="9.4" r=".9"/><circle cx="15" cy="9" r=".9"/><circle cx="17" cy="9.4" r=".9"/><circle cx="19" cy="10.6" r=".9"/></g>',
+    'Chile': '<rect width="30" height="20" fill="#fff"/><rect y="10" width="30" height="10" fill="#d52b1e"/><rect width="10" height="10" fill="#0039a6"/><circle cx="5" cy="5" r="2" fill="#fff"/>',
+    'Panamá': '<rect width="30" height="20" fill="#fff"/><rect x="15" width="15" height="10" fill="#d21034"/><rect y="10" width="15" height="10" fill="#005293"/><circle cx="7.5" cy="5" r="2" fill="#005293"/><circle cx="22.5" cy="15" r="2" fill="#d21034"/>',
+    'Bolivia': FRANJAS(['#d52b1e', '#f9e300', '#007934']),
+    'Perú': FRANJAS(['#d91023', '#fff', '#d91023'], true),
+    'República Dominicana': '<rect width="30" height="20" fill="#fff"/><rect width="13" height="8" fill="#002d62"/><rect x="17" width="13" height="8" fill="#ce1126"/><rect y="12" width="13" height="8" fill="#ce1126"/><rect x="17" y="12" width="13" height="8" fill="#002d62"/>',
+    'Guatemala': FRANJAS(['#4997d0', '#fff', '#4997d0'], true),
+    'Puerto Rico': FRANJAS(['#ed0000', '#fff', '#ed0000', '#fff', '#ed0000']) + '<path d="M0 0L13 10L0 20Z" fill="#0050f0"/><circle cx="4.5" cy="10" r="1.8" fill="#fff"/>',
+    'Uruguay': FRANJAS(['#fff', '#0038a8', '#fff', '#0038a8', '#fff', '#0038a8', '#fff', '#0038a8', '#fff']) + '<rect width="11" height="11" fill="#fff"/><circle cx="5.5" cy="5.5" r="2.6" fill="#fcd116"/>',
+  };
+  const bandera = pais => BANDERAS[pais] ? `<svg class="bandera" viewBox="0 0 30 20" width="21" height="14" aria-hidden="true">${BANDERAS[pais]}<rect width="30" height="20" fill="none" stroke="#000" stroke-opacity=".25"/></svg>` : '';
+  const grupoVersos = n => n <= 2 ? '1 o 2' : n <= 7 ? String(n) : n <= 10 ? '8 a 10' : 'más de 10';
+  const grupoAutoria = a => /^de autor/.test(a) ? 'de autor' : /^mixta/.test(a) ? 'mixta' : 'tradicional anónima';
+  const pagTexto = (p, pf) => !p ? 'página sin ubicar' : (pf && pf !== p ? `págs. ${p}-${pf} del PDF` : `pág. ${p} del PDF`);
+  // títulos que no son de canción (restos de lectura automática o títulos de capítulo)
+  const tituloDeCancion = t => t && !/^\[|^CAP[IÍ]TULO\b/i.test(t) ? t : '';
+
+  // Rima: misma regla que colaRima() y sonidoRima() de metrica.mjs, para leer lo que se escribe.
+  const sinTilde = t => t.replace(/[áéíóú]/g, c => 'aeiou'['áéíóú'.indexOf(c)]);
+  const sonidoRima = t => t.replace(/ch/g, 'C').replace(/ll/g, 'y').replace(/qu(?=[ei])/g, 'k')
+    .replace(/gu(?=[ei])/g, 'G').replace(/g(?=[ei])/g, 'j').replace(/ü/g, 'u').replace(/G/g, 'g')
+    .replace(/c(?=[ei])|z/g, 's').replace(/c/g, 'k').replace(/v/g, 'b').replace(/h/g, '').replace(/C/g, 'ch')
+    .replace(/y(?![aeiou])/g, 'i');
+  const hiato = (p, c) => 'íú'.includes(c) || 'íú'.includes(p) || ('aeoáéó'.includes(p) && 'aeoáéó'.includes(c));
+  function colaRima(w) {
+    const m = w.replace(/([qg])u(?=[eiéí])/g, '$1-').replace(/y(?![aeiouáéíóú])/g, 'i');
+    const silabas = [];
+    for (const run of m.matchAll(/[aeiouáéíóúü]+/g)) {
+      let ini = run.index;
+      for (let i = 1; i <= run[0].length; i++) {
+        if (i === run[0].length || hiato(run[0][i - 1], run[0][i])) { silabas.push([ini, run.index + i]); ini = run.index + i; }
+      }
+    }
+    if (!silabas.length) return { escrita: '', vocales: '' };
+    let k = silabas.findLastIndex(([a, b]) => /[áéíóú]/.test(m.slice(a, b)));
+    if (k < 0) k = /[aeiouns]$/.test(w) && silabas.length > 1 ? silabas.length - 2 : silabas.length - 1;
+    const nucleo = ([a, b]) => {
+      const g = m.slice(a, b), i = g.search(/[áéíóú]/), j = i >= 0 ? i : g.search(/[aeoáéó]/);
+      return a + (j >= 0 ? j : g.length - 1);
+    };
+    // en la asonancia de las esdrújulas no cuenta la vocal del medio
+    const vocales = silabas.slice(k).map(s => sinTilde(m[nucleo(s)]));
+    return { escrita: sinTilde(w.slice(nucleo(silabas[k]))), vocales: vocales.length > 2 ? vocales[0] + vocales.at(-1) : vocales.join('') };
+  }
+  const clavesCons = (dic.rimaCons || []).map(sonidoRima);
+
+  // Coplario publica solo las coplas sin dudas de transcripción, y no publica los textos
+  // sin clasificar (decisión de Marco, 13 nov 2026). porI: copla por su posición en los datos.
+  const R = [], porI = [];
+  D.registros.forEach((r, i) => {
+    const tipo = deDic('tipo', r[col.tipo]);
+    if (r[col.nivel] !== 0 || /^bloque de/.test(tipo)) return;
+    const texto = r[col.texto];
+    const pais = deDic('pais', r[col.pais]), seccion = deDic('seccion', r[col.seccion]), titulo = tituloDeCancion(r[col.titulo]);
+    const numero = r[col.numero], pagina = r[col.pagina];
+    const tramo = (D.paginas || {})[D.fuentes[r[col.fuente]].codigo];
+    const o = {
+      i, id: r[col.id], f: r[col.fuente], texto, pais: pais || 'sin determinar', region: deDic('region', r[col.region]), seccion, titulo,
+      tema: r[col.seccion] >= 0 ? TEMAS[r[col.seccion]] || null : null,
+      cita: deDic('citaBase', r[col.citaBase]) + (numero ? ', ' + (/^Ap\.\s*/.test(numero) ? `Apéndice, canción n.º ${numero.replace(/^Ap\.\s*/, '')}` : `n.º ${numero}`) : '') + ', ' + pagTexto(pagina, r[col.paginaFin]),
+      tipo, forma: forma(tipo), versos: r[col.versos], rima: r[col.rima],
+      rimaCons: deDic('rimaCons', r[col.rimaCons]), claveCons: r[col.rimaCons] >= 0 ? clavesCons[r[col.rimaCons]] : '',
+      pagina, conPagina: !!(tramo && pagina >= tramo[0] && pagina <= tramo[1]),
+      autoria: deDic('autoria', r[col.autoria]), repetidaEn: r[col.repetidaEn], original: '', procedencia: '',
+      mismo: 1, revisada: r[col.revisada] === 1,
+      n: ' ' + norm(texto) + ' ', nExtra: ' ' + norm(titulo + ' ' + seccion) + ' ', pv: norm(texto.split('\n')[0]),
+    };
+    porI[i] = o; R.push(o);
+  });
+  const porId = new Map(R.map(r => [r.id, r]));
+  // cuántas coplas publicadas empiezan con el mismo verso
+  const vecesPv = new Map();
+  for (const r of R) vecesPv.set(r.pv, (vecesPv.get(r.pv) || 0) + 1);
+  for (const r of R) r.mismo = vecesPv.get(r.pv);
+  const FORMAS_DE_ENTRADA = [...new Set(R.map(r => r.forma))].filter(f => f !== 'décima');   // las décimas, destildadas
+  // de las rimas que suenan igual ("aza" y "asa"), se muestra la forma escrita más común
+  const vecesCons = new Map();
+  for (const r of R) if (r.rimaCons) vecesCons.set(r.rimaCons, (vecesCons.get(r.rimaCons) || 0) + 1);
+  const escrituraRima = new Map();
+  for (const [escrita] of [...vecesCons].sort((a, b) => a[1] - b[1])) escrituraRima.set(sonidoRima(escrita), escrita);
+
+  // ---------- estado ----------
+  // En los filtros, nada marcado quiere decir "todo". La excepción es la forma de la estrofa,
+  // que arranca con todas tildadas menos las décimas (pedido de Marco).
+  const FACETAS = [
+    { clave: 'pais', titulo: 'País', valor: r => r.pais, html: v => bandera(v) + esc(v), abierta: true },
+    { clave: 'tema', titulo: 'Tema', valor: r => r.tema, todas: true, alFinal: 'Varias', abierta: true },
+    { clave: 'libro', titulo: 'Libro', valor: r => fuentes[r.f].codigo, etiqueta: v => fuentePorCodigo[v] ? fuentePorCodigo[v].etiqueta : v, buscador: true,
+      html: v => { const f = fuentePorCodigo[v]; return f ? `${esc(f.tituloCorto)} - <i class="autor">${esc(f.autorCorto)}</i>` : esc(v); } },
+    { clave: 'tipo', titulo: 'Forma de la estrofa', valor: r => r.forma, todas: true, defecto: FORMAS_DE_ENTRADA, nombre: 'Formas',
+      nota: 'Las décimas no se muestran de entrada: tildalas para verlas.' },
+    { clave: 'autoria', titulo: 'Autoría', valor: r => grupoAutoria(r.autoria) },
+    { clave: 'versos', titulo: 'Cantidad de versos', valor: r => grupoVersos(r.versos), fijo: ['1 o 2', '3', '4', '5', '6', '7', '8 a 10', 'más de 10'] },
+  ];
+  const ORDEN_PANEL = ['pais', 'tema', 'rima', 'libro', 'tipo', 'autoria', 'pv', 'versos', 'conPagina'];
+  const estado = { q: '', palabraCompleta: false, buscarTitulo: false, rima: '', modoRima: 'asonante', pv: '', orden: 'libro', conPagina: false, copla: '', sel: {} };
+  const reiniciar = () => {
+    Object.assign(estado, { q: '', rima: '', modoRima: 'asonante', pv: '', conPagina: false, copla: '' });
+    FACETAS.forEach(F => estado.sel[F.clave] = new Set(F.defecto || []));
+  };
+  const comoAlAbrir = F => { const s = estado.sel[F.clave], d = F.defecto || []; return s.size === d.length && d.every(v => s.has(v)); };
+  reiniciar();
+  const abiertas = new Set();          // listas con "Ver todas" desplegado
+  const filtrosFaceta = {};
+
+  // estado en la dirección (para volver a una búsqueda, guardarla o mandarla)
+  function aHash() {
+    const p = new URLSearchParams();
+    if (estado.copla) p.set('copla', estado.copla);
+    else {
+      if (estado.q) p.set('q', estado.q);
+      if (estado.palabraCompleta) p.set('completa', '1');
+      if (estado.buscarTitulo) p.set('titulos', '1');
+      if (estado.rima) p.set('rima', estado.rima);
+      if (estado.modoRima === 'consonante') p.set('rimaTipo', 'consonante');
+      if (estado.pv) p.set('pv', estado.pv);
+      if (estado.conPagina) p.set('enlibro', '1');
+      if (estado.orden !== 'libro') p.set('orden', estado.orden);
+      FACETAS.forEach(F => { if (!comoAlAbrir(F)) p.set(F.clave, [...estado.sel[F.clave]].sort().join('|') || '-'); });
+    }
+    const h = p.toString();
+    history.replaceState(null, '', h ? '#' + h : location.pathname + location.search);
+  }
+  function deHash() {
+    const p = new URLSearchParams(location.hash.slice(1));
+    estado.copla = porId.has(p.get('copla')) ? p.get('copla') : '';
+    estado.q = p.get('q') || ''; estado.palabraCompleta = p.get('completa') === '1'; estado.buscarTitulo = p.get('titulos') === '1';
+    estado.rima = p.get('rima') || ''; estado.pv = p.get('pv') || ''; estado.conPagina = p.get('enlibro') === '1';
+    estado.modoRima = p.get('rimaTipo') === 'consonante' ? 'consonante' : 'asonante';
+    estado.orden = ['libro', 'az', 'azar'].includes(p.get('orden')) ? p.get('orden') : 'libro';
+    FACETAS.forEach(F => { if (p.has(F.clave)) estado.sel[F.clave] = new Set(p.get(F.clave) === '-' ? [] : p.get(F.clave).split('|').filter(Boolean)); });
+  }
+
+  // ---------- búsqueda ----------
+  function interpretar(q) {
+    const frases = [], excluir = [], palabras = [];
+    q.replace(/(-?)"([^"]+)"|(\S+)/g, (m, menos, frase, suelta) => {
+      if (frase) { const n = norm(frase); if (n) (menos ? excluir : frases).push(n); }
+      else if (suelta.startsWith('-') && suelta.length > 1) { const n = norm(suelta.slice(1)); if (n) excluir.push(n); }
+      else { norm(suelta).split(' ').filter(Boolean).forEach(w => palabras.push(w)); }
+      return '';
+    });
+    return { frases, excluir, palabras };
+  }
+  // Lo que se busca como rima: se puede escribir una palabra ("paloma") o una terminación ("ado", "ía").
+  function claveRima() {
+    const t = estado.rima.toLowerCase().replace(/[^a-záéíóúüñ]/g, '');
+    if (!t) return '';
+    if (estado.modoRima === 'consonante') {
+      const tal = sonidoRima(sinTilde(t));
+      return escrituraRima.has(tal) && t === sinTilde(t) ? tal : sonidoRima(colaRima(t).escrita) || tal;
+    }
+    if (/^[aeiouáéíóú]{1,3}$/.test(t)) return sinTilde(t);       // ya son las vocales: "ía", "ao"
+    return colaRima(t).vocales;
+  }
+  const rimaVisible = (clave, consonante) => consonante ? '-' + (escrituraRima.get(clave) || clave) : clave.split('').join('-');
+  function filtroTexto() {
+    const { frases, excluir, palabras } = interpretar(estado.q);
+    const fin = estado.palabraCompleta ? ' ' : '';
+    const req = [...palabras, ...frases].map(t => ' ' + t + fin);
+    const exc = excluir.map(t => ' ' + t + fin);
+    const rima = claveRima(), campoRima = estado.modoRima === 'consonante' ? 'claveCons' : 'rima';
+    const hayRima = !!estado.rima.trim();
+    const pv = norm(estado.pv);
+    return r => {
+      const campo = estado.buscarTitulo ? r.n + r.nExtra : r.n;
+      for (const t of req) if (!campo.includes(t)) return false;
+      for (const t of exc) if (campo.includes(t)) return false;
+      if (hayRima && r[campoRima] !== rima) return false;
+      if (pv && !r.pv.startsWith(pv)) return false;
+      if (estado.conPagina && !r.conPagina) return false;
+      return true;
+    };
+  }
+  function resaltador() {
+    const { frases, palabras } = interpretar(estado.q);
+    const terminos = [...palabras, ...frases].filter(t => t.length >= 2);
+    if (!terminos.length || estado.copla) return s => esc(s);
+    const clase = { a: '[aáàäâ]', e: '[eéèëê]', i: '[iíìïî]', o: '[oóòöô]', u: '[uúùüû]', n: '[nñ]' };
+    const patron = terminos.map(t => t.split('').map(ch => ch === ' ' ? '[^\\p{L}\\p{N}]+' : (clase[ch] || ch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))).join('')
+      + (estado.palabraCompleta || t.length <= 3 ? '(?![\\p{L}])' : ''));
+    const re = new RegExp('(?<![\\p{L}])(' + patron.join('|') + ')', 'giu');
+    return s => esc(s).replace(re, '<mark>$1</mark>');
+  }
+
+  // ---------- cálculo de resultados y conteos ----------
+  let resultados = [], mostrados = 0;
+  const POR_PAGINA = 40;
+  let semillaAzar = Math.random();
+  function mezclar(lista) {
+    let s = Math.floor(semillaAzar * 2147483647) || 1;
+    const azar = () => (s = (s * 48271) % 2147483647) / 2147483647;
+    for (let i = lista.length - 1; i > 0; i--) { const j = Math.floor(azar() * (i + 1)); [lista[i], lista[j]] = [lista[j], lista[i]]; }
+  }
+  const LIBROS_PORTADA = new Set(fuentes.flatMap((f, i) => /^(carrizo_|frenk_)/.test(f.codigo) ? [i] : []));
+  const sinFiltros = () => !estado.q && !estado.rima && !estado.pv && !estado.conPagina && FACETAS.every(comoAlAbrir);
+  const enPortada = () => !estado.copla && sinFiltros();
+
+  function calcular() {
+    const pasaTexto = filtroTexto();
+    const conteos = Object.fromEntries(FACETAS.map(F => [F.clave, new Map()]));
+    let res = [];
+    for (const r of R) {
+      if (!pasaTexto(r)) continue;
+      let falla = -1, fallas = 0;
+      const valores = [];
+      for (let k = 0; k < FACETAS.length; k++) {
+        const F = FACETAS[k], v = F.valor(r), s = estado.sel[F.clave];
+        valores.push(v);
+        if (s.size && !s.has(v)) { fallas++; falla = k; if (fallas > 1) break; }
+      }
+      if (fallas > 1) continue;
+      for (let k = 0; k < FACETAS.length; k++) {
+        if (fallas === 1 && falla !== k) continue;
+        const v = valores[k]; if (v == null) continue;
+        const m = conteos[FACETAS[k].clave];
+        m.set(v, (m.get(v) || 0) + 1);
+      }
+      if (fallas === 0) res.push(r);
+    }
+    const unica = estado.copla && porId.get(estado.copla);
+    if (unica) res = [unica];
+    else if (estado.orden === 'az') res.sort((a, b) => a.pv.localeCompare(b.pv, 'es'));
+    else if (estado.orden === 'azar') mezclar(res);
+    else if (enPortada()) {
+      // al abrir sin buscar: primero Carrizo y Frenk, mezcladas (cambian cada vez); después el resto
+      const destacadas = res.filter(r => LIBROS_PORTADA.has(r.f));
+      mezclar(destacadas);
+      res = [...destacadas, ...res.filter(r => !LIBROS_PORTADA.has(r.f))];
+    }
+    resultados = res;
+    pintarFacetas(conteos);
+    pintarRimas();
+    pintarActivos();
+    $('bienvenida').hidden = !enPortada();
+    $('nRes').textContent = num(res.length);
+    $('nResTxt').textContent = unica ? 'copla' : res.length === 1 ? 'copla' : 'coplas';
+    $('orden').hidden = !!unica;
+    $('verResultados').textContent = `Ver ${num(res.length)} ${res.length === 1 ? 'copla' : 'coplas'}`;
+    $('resultados').innerHTML = '';
+    $('resultados').classList.toggle('una', !!unica);
+    mostrados = 0;
+    pintarMas();
+    aHash();
+  }
+
+  // ---------- panel de filtros ----------
+  const bloques = new Map([...document.querySelectorAll('#facetas [data-bloque]')].map(b => [b.dataset.bloque, b]));
+  for (const F of FACETAS) {
+    const d = document.createElement('details');
+    d.className = 'faceta'; d.dataset.bloque = F.clave; d.open = !!F.abierta;
+    d.innerHTML = `<summary><span>${esc(F.titulo)}</span><span class="fn"></span></summary><div class="fc"></div>`;
+    bloques.set(F.clave, d);
+  }
+  for (const k of ORDEN_PANEL) $('facetas').appendChild(bloques.get(k));
+
+  function pintarFacetas(conteos) {
+    for (const F of FACETAS) {
+      const m = conteos[F.clave], sel = estado.sel[F.clave];
+      let opciones = F.fijo ? F.fijo.filter(o => m.get(o) || sel.has(o)) : [...new Set([...m.keys(), ...sel])];
+      // las listas con marcas de entrada (formas) no se reordenan al tildar; "Varias" va al final
+      if (!F.fijo) opciones.sort((a, b) => ((a === F.alFinal) - (b === F.alFinal)) || (F.defecto ? 0 : sel.has(b) - sel.has(a)) || (m.get(b) || 0) - (m.get(a) || 0) || String(a).localeCompare(String(b), 'es'));
+      const filtro = norm(filtrosFaceta[F.clave] || '');
+      if (filtro) opciones = opciones.filter(o => norm((F.etiqueta || String)(o)).includes(filtro));
+      const LIM = 6, entera = F.fijo || F.todas;
+      const verTodas = abiertas.has(F.clave) || filtro || entera;
+      const visibles = verTodas ? opciones : opciones.filter((o, i) => i < LIM || sel.has(o));
+      const det = bloques.get(F.clave);
+      det.querySelector('.fn').textContent = comoAlAbrir(F) ? '' : sel.size || '•';
+      det.querySelector('.fc').innerHTML =
+        (F.buscador ? `<input class="filtrar" data-faceta="${F.clave}" placeholder="Buscar en la lista…" value="${esc(filtrosFaceta[F.clave] || '')}" aria-label="Buscar en ${esc(F.titulo)}">` : '') +
+        (visibles.length ? '' : '<p class="nota">Nada con ese nombre.</p>') +
+        visibles.map(o => {
+          const n = m.get(o) || 0, et = F.html ? F.html(o) : esc((F.etiqueta || String)(o));
+          return `<label class="opcion${n ? '' : ' cero'}"><input type="checkbox" data-faceta="${F.clave}" value="${esc(o)}"${sel.has(o) ? ' checked' : ''}><span>${et}</span><span class="n">${num(n)}</span></label>`;
+        }).join('') +
+        (F.nota ? `<p class="nota">${esc(F.nota)}</p>` : '') +
+        (!filtro && !entera && opciones.length > LIM ? `<button type="button" class="enlace" data-abrir="${F.clave}">${abiertas.has(F.clave) ? 'Ver menos' : 'Ver los ' + opciones.length}</button>` : '');
+    }
+    bloques.get('rima').querySelector('.fn').textContent = estado.rima ? '1' : '';
+    bloques.get('pv').querySelector('.fn').textContent = estado.pv ? '1' : '';
+    $('conPagina').checked = estado.conPagina;
+  }
+  // si todas las coplas tienen la imagen de su página, el filtro no hace falta y no se muestra
+  const nConPagina = R.filter(r => r.conPagina).length;
+  $('nConPagina').textContent = num(nConPagina);
+  bloques.get('conPagina').hidden = nConPagina === R.length;
+  $('panel').addEventListener('change', e => {
+    const t = e.target; if (!t.dataset.faceta || t.type !== 'checkbox') return;
+    const s = estado.sel[t.dataset.faceta];
+    t.checked ? s.add(t.value) : s.delete(t.value);
+    estado.copla = '';
+    calcular();
+  });
+  $('panel').addEventListener('click', e => {
+    const k = e.target.dataset.abrir; if (!k) return;
+    abiertas.has(k) ? abiertas.delete(k) : abiertas.add(k);
+    calcular();
+  });
+  let tFaceta;
+  $('panel').addEventListener('input', e => {
+    const t = e.target; if (!t.classList.contains('filtrar')) return;
+    filtrosFaceta[t.dataset.faceta] = t.value;
+    clearTimeout(tFaceta);
+    tFaceta = setTimeout(() => {
+      calcular();
+      const nuevo = document.querySelector(`.filtrar[data-faceta="${t.dataset.faceta}"]`);
+      if (nuevo) { nuevo.focus(); nuevo.setSelectionRange(nuevo.value.length, nuevo.value.length); }
+    }, 150);
+  });
+
+  // El botón Filtros: en celular abre el panel; en pantalla grande oculta o muestra la barra lateral.
+  let nFiltros = 0;
+  const angosta = matchMedia('(max-width: 860px)');
+  function rotularFiltros() {
+    const oculta = document.body.classList.contains('sin-panel'), cuantos = nFiltros ? ` · ${nFiltros}` : '';
+    $('btnFiltros').textContent = angosta.matches ? 'Filtros' + cuantos : oculta ? 'Mostrar filtros' + cuantos : 'Ocultar filtros';
+  }
+  angosta.addEventListener('change', rotularFiltros);
+  document.body.classList.toggle('sin-panel', leer('coplario-sin-panel', false));
+
+  // filtros activos, con "Limpiar todo" al final
+  function pintarActivos() {
+    const chips = [];
+    if (estado.copla) chips.push(['copla', '', 'Una copla sola: ver todas']);
+    else {
+      if (estado.q) chips.push(['q', '', `Búsqueda: ${estado.q}`]);
+      if (estado.rima) chips.push(['rima', '', `Rima ${estado.modoRima}: ${rimaVisible(claveRima(), estado.modoRima === 'consonante') || estado.rima}`]);
+      if (estado.pv) chips.push(['pv', '', `Empieza con: ${estado.pv}`]);
+      FACETAS.forEach(F => {
+        if (!F.defecto) estado.sel[F.clave].forEach(v => chips.push([F.clave, v, (F.etiqueta || String)(v)]));
+        else if (!comoAlAbrir(F)) chips.push([F.clave, '*', `${F.nombre}: ${[...estado.sel[F.clave]].join(', ') || 'todas'}`]);
+      });
+      if (estado.conPagina) chips.push(['conPagina', '', 'Se pueden ver en el libro']);
+    }
+    nFiltros = chips.filter(c => c[0] !== 'q' && c[0] !== 'copla').length;
+    rotularFiltros();
+    $('activos').innerHTML = chips.map(([k, v, t]) => `<button type="button" class="activo" data-k="${k}" data-v="${esc(v)}" title="Quitar">${esc(t)}</button>`).join('')
+      + (estado.copla ? '<button type="button" class="enlace" id="otraAzar">Otra al azar</button>' : chips.length > 1 ? '<button type="button" class="enlace" id="limpiar">Limpiar todo</button>' : '');
+  }
+  function limpiarTodo() {
+    reiniciar(); Object.keys(filtrosFaceta).forEach(k => delete filtrosFaceta[k]);
+    sincronizarControles(); calcular();
+  }
+  $('activos').addEventListener('click', e => {
+    if (e.target.id === 'limpiar') return limpiarTodo();
+    if (e.target.id === 'otraAzar') return unaAlAzar();
+    const b = e.target.closest('.activo'); if (!b) return;
+    const { k, v } = b.dataset;
+    if (k === 'copla') estado.copla = '';
+    else if (k === 'q') estado.q = '';
+    else if (k === 'rima') estado.rima = '';
+    else if (k === 'pv') estado.pv = '';
+    else if (k === 'conPagina') estado.conPagina = false;
+    else if (v === '*') estado.sel[k] = new Set(FACETAS.find(F => F.clave === k).defecto);
+    else estado.sel[k].delete(v);
+    sincronizarControles(); calcular();
+  });
+  $('conPagina').addEventListener('change', e => { estado.conPagina = e.target.checked; estado.copla = ''; calcular(); });
+
+  // rima
+  function pintarRimas() {
+    const consonante = estado.modoRima === 'consonante', campo = consonante ? 'claveCons' : 'rima';
+    const c = new Map();
+    for (const r of resultados) if (r[campo]) c.set(r[campo], (c.get(r[campo]) || 0) + 1);
+    const top = [...c.entries()].sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const actual = claveRima();
+    $('chipsRima').innerHTML = top.map(([r, n]) => `<button type="button" data-rima="${esc(consonante ? escrituraRima.get(r) : r)}" aria-pressed="${r === actual}" title="${num(n)} coplas">${esc(rimaVisible(r, consonante))}</button>`).join('');
+    const buscada = estado.rima.trim() ? (actual ? `Se busca la rima ${rimaVisible(actual, consonante)}. ` : 'No reconozco una rima en eso. ') : '';
+    $('notaRima').textContent = buscada + (consonante
+      ? 'Consonante: coincide todo desde la vocal acentuada (corazón rima con canción).'
+      : 'Asonante: coinciden solo las vocales desde el acento (paloma rima con hora y con sola). Escribí una palabra o una terminación.');
+  }
+  $('chipsRima').addEventListener('click', e => {
+    const r = e.target.dataset.rima; if (!r) return;
+    estado.rima = e.target.getAttribute('aria-pressed') === 'true' ? '' : r;
+    estado.copla = '';
+    $('rima').value = estado.rima;
+    calcular();
+  });
+  function pintarModoRima() {
+    document.querySelectorAll('#modoRima button').forEach(b => b.setAttribute('aria-pressed', b.dataset.modo === estado.modoRima));
+    $('rima').placeholder = estado.modoRima === 'consonante' ? 'Rima con… (ej. corazón)' : 'Rima con… (ej. paloma)';
+  }
+  $('modoRima').addEventListener('click', e => {
+    const m = e.target.dataset.modo; if (!m || m === estado.modoRima) return;
+    estado.modoRima = m; pintarModoRima(); calcular();
+  });
+
+  // ---------- tarjetas ----------
+  const textoParaCopiar = r => r.texto + '\n' + r.cita;
+  const enlaceDe = r => location.href.split('#')[0] + '#copla=' + encodeURIComponent(r.id);
+  function visorDe(r) {
+    const tramo = (D.paginas || {})[fuentes[r.f].codigo];
+    return tramo && r.pagina >= tramo[0] && r.pagina <= tramo[1] ? 'visor.html#' + fuentes[r.f].codigo + '/' + r.pagina : '';
+  }
+  // En la tarjeta manda la copla: debajo va la fuente en un renglón (país, libro, autor y año)
+  // y, al tocarla, se despliega la cita completa con todo lo demás (pedido de Marco, 13 nov 2026).
+  const citaCorta = r => {
+    const f = fuentes[r.f], lugar = r.pais === 'sin determinar' ? '' : r.pais + (r.region ? ` (${r.region})` : '');
+    return (lugar ? lugar + ' · ' : '') + f.tituloCorto + ', ' + f.autorCorto + (f.anio ? ', ' + f.anio : '');
+  };
+  function tarjeta(r, resaltar, abierta = estado.copla === r.id) {
+    const tambien = r.repetidaEn ? r.repetidaEn.split(', ').map(c => fuentePorCodigo[c] ? fuentePorCodigo[c].etiqueta : c).join('; ') : '';
+    const consonante = estado.modoRima === 'consonante';
+    const rima = consonante ? r.claveCons : r.rima, visor = visorDe(r);
+    const mas = [
+      r.mismo > 1 ? `<button type="button" data-accion="pv">Ver las ${r.mismo} que empiezan igual</button>` : '',
+      r.original ? '<button type="button" data-accion="original">Ver el texto antes de corregir</button>' : '',
+      CONTACTO ? `<a href="mailto:${esc(CONTACTO)}?subject=${encodeURIComponent('Coplario: error en la copla ' + r.id)}&body=${encodeURIComponent(textoParaCopiar(r) + '\n\nEl error es: ')}">Avisar un error</a>` : '',
+    ].join('');
+    return `<article class="copla" data-i="${r.i}">
+      <div class="versos">${resaltar(r.texto)}</div>
+      <details class="fuente"${abierta ? ' open' : ''}>
+        <summary><span class="cita">${esc(citaCorta(r))}</span><span class="mas-datos"></span></summary>
+        <p class="cita">${esc(r.cita)}</p>
+        ${r.seccion ? `<p>Sección del libro: ${esc(r.seccion)}</p>` : ''}
+        ${r.titulo ? `<p>Canción: ${esc(r.titulo)}</p>` : ''}
+        ${r.procedencia ? `<p>Procedencia según el libro: ${esc(r.procedencia)}</p>` : ''}
+        ${tambien ? `<p>También aparece en: ${esc(tambien)}</p>` : ''}
+      </details>
+      <div class="chips">
+        ${r.revisada ? '<span class="estado ok">Revisada a mano</span>' : ''}
+        ${r.tema ? `<button type="button" class="chip" data-filtro="tema" data-v="${esc(r.tema)}" title="En el libro, esta copla está en la sección: ${esc(r.seccion)}. Tocá para ver todas las de este tema">${esc(r.tema)}</button>` : ''}
+        <button type="button" class="chip" data-filtro="tipo" data-v="${esc(r.forma)}" title="${esc(r.tipo)}. Tocá para ver solo esta forma">${esc(r.forma)}</button>
+        ${rima ? `<button type="button" class="chip" data-filtro="rima" data-v="${esc(consonante ? r.rimaCons : r.rima)}" title="Ver las coplas con esta rima">rima ${esc(rimaVisible(rima, consonante))}</button>` : ''}
+      </div>
+      <div class="original" hidden>${esc(r.original)}</div>
+      <div class="botones">
+        <button type="button" data-accion="copiar">${ICONO.copiar}Copiar</button>
+        <button type="button" data-accion="compartir">${ICONO.compartir}Compartir</button>
+        ${visor ? `<a href="${visor}" target="_blank" rel="noopener" title="Abre la página ${r.pagina} del libro, tal como está impresa">${ICONO.pagina}Ver en el libro</a>` : ''}
+        ${mas ? `<details class="menu"><summary aria-label="Más acciones">Más</summary><div class="menu-lista">${mas}</div></details>` : ''}
+      </div>
+    </article>`;
+  }
+  // el detalle llega aparte; cuando llega, se rehace la tarjeta
+  function completarTodo(lista) {
+    const sin = lista.filter(r => !r.conDetalle);
+    if (!sin.length) return Promise.resolve([]);
+    return window.COPLAS_PEDIR_DETALLES(sin.map(r => r.i)).then(det => {
+      for (const r of sin) { [r.original, r.procedencia] = det(r.i); r.conDetalle = true; }
+      return sin;
+    });
+  }
+  function completarDetalles(lote, resaltar) {
+    completarTodo(lote).then(sin => {
+      for (const r of sin) {
+        if (!r.original && !r.procedencia) continue;
+        const art = document.querySelector('#resultados .copla[data-i="' + r.i + '"]');
+        if (art) art.outerHTML = tarjeta(r, resaltar, art.querySelector('details.fuente').open);
+      }
+    }).catch(() => {});
+  }
+  function pintarMas() {
+    const resaltar = resaltador();
+    const lote = resultados.slice(mostrados, mostrados + POR_PAGINA);
+    if (!resultados.length) $('resultados').innerHTML = '<div class="vacio">No hay coplas con estos criterios. Probá sacar algún filtro o usar menos palabras.</div>';
+    else { $('resultados').insertAdjacentHTML('beforeend', lote.map(r => tarjeta(r, resaltar)).join('')); completarDetalles(lote, resaltar); }
+    mostrados += lote.length;
+    const faltan = resultados.length - mostrados;
+    $('cargarMas').hidden = faltan <= 0;
+    $('cargarMas').textContent = `Mostrar más (quedan ${num(faltan)})`;
+  }
+  $('cargarMas').addEventListener('click', pintarMas);
+
+  $('resultados').addEventListener('click', async e => {
+    const art = e.target.closest('.copla'); if (!art) return;
+    const r = porI[Number(art.dataset.i)];
+    const chip = e.target.closest('[data-filtro]');
+    if (chip) {
+      const filtro = chip.dataset.filtro;
+      estado.copla = '';
+      if (filtro === 'rima') { estado.rima = chip.dataset.v; bloques.get('rima').open = true; }
+      else { estado.sel[filtro] = new Set([chip.dataset.v]); bloques.get(filtro).open = true; }
+      sincronizarControles(); calcular(); window.scrollTo({ top: 0 }); return;
+    }
+    const boton = e.target.closest('[data-accion]'); if (!boton) return;
+    const accion = boton.dataset.accion;
+    if (accion === 'copiar') aviso(await copiar(textoParaCopiar(r)) ? 'Copla copiada con su fuente' : 'No se pudo copiar');
+    if (accion === 'compartir') {
+      const url = enlaceDe(r);
+      if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+        try { await navigator.share({ title: 'Coplario', text: textoParaCopiar(r), url }); } catch { /* canceló */ }
+      } else aviso(await copiar(url) ? 'Enlace a esta copla copiado' : 'No se pudo copiar el enlace');
+    }
+    if (accion === 'pv') {
+      estado.copla = ''; estado.pv = r.texto.split('\n')[0]; estado.q = '';
+      bloques.get('pv').open = true;
+      sincronizarControles(); calcular(); window.scrollTo({ top: 0 });
+    }
+    if (accion === 'original') {
+      const o = art.querySelector('.original'); o.hidden = !o.hidden;
+      boton.textContent = o.hidden ? 'Ver el texto antes de corregir' : 'Ocultar el texto antes de corregir';
+      boton.closest('details').open = false;
+    }
+  });
+  // los menús desplegables se cierran al tocar afuera
+  document.addEventListener('click', e => {
+    document.querySelectorAll('details.menu[open]').forEach(d => { if (!d.contains(e.target)) d.open = false; });
+  });
+
+  // ---------- controles generales ----------
+  function sincronizarControles() {
+    $('q').value = estado.q; $('rima').value = estado.rima; $('pv').value = estado.pv;
+    $('palabraCompleta').checked = estado.palabraCompleta; $('buscarTitulo').checked = estado.buscarTitulo;
+    $('orden').value = estado.orden; $('conPagina').checked = estado.conPagina;
+    $('btnOpciones').classList.toggle('con-opciones', estado.palabraCompleta || estado.buscarTitulo);
+    pintarModoRima();
+  }
+  let tBusqueda;
+  const conDemora = fn => { clearTimeout(tBusqueda); tBusqueda = setTimeout(fn, 180); };
+  $('formBuscar').addEventListener('submit', e => { e.preventDefault(); $('q').blur(); });
+  $('q').addEventListener('input', e => conDemora(() => { estado.q = e.target.value.trim(); estado.copla = ''; calcular(); }));
+  $('rima').addEventListener('input', e => conDemora(() => { estado.rima = e.target.value.trim(); estado.copla = ''; calcular(); }));
+  $('pv').addEventListener('input', e => conDemora(() => { estado.pv = e.target.value.trim(); estado.copla = ''; calcular(); }));
+  $('palabraCompleta').addEventListener('change', e => { estado.palabraCompleta = e.target.checked; sincronizarControles(); calcular(); });
+  $('buscarTitulo').addEventListener('change', e => { estado.buscarTitulo = e.target.checked; sincronizarControles(); calcular(); });
+  $('orden').addEventListener('change', e => { estado.orden = e.target.value; semillaAzar = Math.random(); calcular(); });
+  $('btnOpciones').addEventListener('click', () => {
+    const o = $('opciones'); o.hidden = !o.hidden;
+    $('btnOpciones').setAttribute('aria-expanded', !o.hidden);
+  });
+  $('inicio').addEventListener('click', e => { e.preventDefault(); limpiarTodo(); window.scrollTo({ top: 0 }); });
+  function unaAlAzar() {
+    let r; do { r = R[Math.floor(Math.random() * R.length)]; } while (r.forma === 'décima');
+    estado.copla = r.id; calcular(); window.scrollTo({ top: 0 });
+  }
+  $('btnAzar').addEventListener('click', unaAlAzar);
+  $('bienvenida').addEventListener('click', e => {
+    const b = e.target.closest('[data-ej]'); if (!b) return;
+    const ej = JSON.parse(b.dataset.ej);
+    reiniciar();
+    for (const [k, v] of Object.entries(ej)) {
+      if (Array.isArray(v)) { estado.sel[k] = new Set(v); bloques.get(k).open = true; } else estado[k] = v;
+    }
+    if (ej.rima) bloques.get('rima').open = true;
+    if (ej.pv) bloques.get('pv').open = true;
+    sincronizarControles(); calcular();
+  });
+  // (la versión pública no exporta resultados: se quitó el botón Exportar, 13 nov 2026)
+
+  // filtros en celular: panel que sube desde abajo
+  function abrirPanel(abrir) {
+    $('panel').classList.toggle('abierto', abrir);
+    $('telon').hidden = !abrir;
+    $('btnFiltros').setAttribute('aria-expanded', abrir);
+    document.body.style.overflow = abrir ? 'hidden' : '';
+  }
+  $('btnFiltros').addEventListener('click', () => {
+    if (angosta.matches) return abrirPanel(true);
+    guardar('coplario-sin-panel', document.body.classList.toggle('sin-panel'));
+    rotularFiltros();
+  });
+  for (const id of ['telon', 'cerrarPanel', 'verResultados']) $(id).addEventListener('click', () => abrirPanel(false));
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') abrirPanel(false);
+    if (e.key === '/' && !/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) { e.preventDefault(); $('q').focus(); }
+  });
+
+  $('btnTema').addEventListener('click', () => {
+    const raiz = document.documentElement;
+    raiz.dataset.theme = raiz.dataset.theme === 'dark' ? 'light' : 'dark';
+    guardar('coplas-tema', raiz.dataset.theme);
+  });
+  window.addEventListener('scroll', () => { $('subir').hidden = window.scrollY < 900; }, { passive: true });
+  $('subir').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+  // ---------- arranque ----------
+  function aplicarHash() { reiniciar(); deHash(); sincronizarControles(); }
+  window.addEventListener('hashchange', () => { aplicarHash(); calcular(); });
+  aplicarHash();
+  if (estado.rima) bloques.get('rima').open = true;
+  if (estado.pv) bloques.get('pv').open = true;
+  FACETAS.forEach(F => { if (!comoAlAbrir(F)) bloques.get(F.clave).open = true; });
+  $('carga').remove(); $('app').hidden = false;
+  calcular();
+};
+</script>
+</body>
+</html>

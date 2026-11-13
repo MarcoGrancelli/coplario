@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Página impresa · Coplario</title>
+<link rel="icon" href="logo.svg" type="image/svg+xml">
+<script>try { document.documentElement.dataset.theme = JSON.parse(localStorage.getItem('compartida:coplas-tema')) || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,700;1,400&family=Alegreya+Sans:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="coplario.css?v=8484a4bd">
+</head>
+<body>
+<header class="cab">
+  <div class="cab-in">
+    <a class="marca" href="index.html" title="Volver a Coplario">
+      <img src="logo.svg" width="42" height="42" alt="">
+      <div><h1>Coplario</h1><p>la página tal como está impresa</p></div>
+    </a>
+    <span></span>
+    <nav class="cab-nav" aria-label="Secciones"><a href="index.html">Volver a las coplas</a></nav>
+  </div>
+  <div class="guarda"></div>
+</header>
+<div class="visor-barra">
+  <div class="libro"><b id="titulo">Cargando…</b><small id="detalle"></small></div>
+  <div class="visor-nav">
+    <button class="btn" id="ant" aria-label="Página anterior">← Anterior</button>
+    <label>Pág. <input id="num" inputmode="numeric" aria-label="Número de página del PDF"></label>
+    <button class="btn" id="sig" aria-label="Página siguiente">Siguiente →</button>
+    <button class="btn" id="zoom" aria-pressed="false" title="Ver la imagen a su tamaño real">Ampliar</button>
+  </div>
+</div>
+<main class="visor-main">
+  <div class="zona"><div class="hoja" id="hoja" title="Tocá la imagen para ampliarla o ajustarla"><img id="img" alt=""></div></div>
+  <p class="error" id="error" hidden></p>
+  <p class="visor-pie" id="pie"></p>
+</main>
+<footer class="pie"><div class="guarda"></div><div class="pie-in"><b>Coplario</b><span>Creado por Marco Grancelli</span><a href="acerca.html">Acerca del sitio y sus fuentes</a><span class="redes"><a href="https://www.instagram.com/marcograncelli/" target="_blank" rel="noopener me">Instagram</a> · <a href="https://www.facebook.com/Marcograncellimusica" target="_blank" rel="noopener me">Facebook</a> · <a href="https://linktr.ee/marcograncelli" target="_blank" rel="noopener me">Música y más enlaces</a></span></div></footer>
+<script>
+"use strict";
+(function () {
+  const $ = id => document.getElementById(id);
+  const BASE = '';
+  let I, codigo, pagina, tramo, fuera = 0;
+  window.COPLAS_INDICE = d => { I = d; };
+  const s = document.createElement('script');
+  s.src = BASE + 'datos/indice.js?v=222531d60d';
+  s.onload = () => { window.addEventListener('hashchange', leerHash); leerHash(); };
+  s.onerror = () => { $('titulo').textContent = 'No se pudo cargar la lista de libros.'; };
+  document.head.appendChild(s);
+  const ruta = (c, p) => BASE + 'paginas/' + c + '/p' + String(p).padStart(4, '0') + '.jpg';
+  function leerHash() {
+    const m = decodeURIComponent(location.hash.slice(1)).match(/^([a-z0-9_]+)\/(\d+)$/);
+    codigo = m && m[1]; pagina = m && +m[2];
+    const f = I.fuentes.find(x => x.codigo === codigo);
+    tramo = f && I.paginas[codigo];
+    if (!f || !tramo) {
+      $('titulo').textContent = 'Página impresa'; $('detalle').textContent = ''; $('pie').textContent = '';
+      document.title = 'Página impresa · Coplario';
+      $('hoja').hidden = true; $('error').hidden = false;
+      $('error').textContent = f ? 'De este libro no se publican imágenes de página.' : 'No encontré ese libro.';
+      for (const b of ['ant', 'sig', 'num', 'zoom']) $(b).disabled = true;
+      return;
+    }
+    const pedida = pagina;
+    pagina = Math.min(Math.max(pagina, tramo[0]), tramo[1]);
+    if (pedida !== pagina) { location.replace('#' + codigo + '/' + pagina); fuera = pedida; return; }
+    $('titulo').textContent = f.titulo.replace(/\..*$/, '') + (f.tomo ? ', ' + f.tomo.split(':')[0] : '');
+    $('detalle').textContent = [f.autor, f.anio].filter(Boolean).join(', ');
+    document.title = 'Pág. ' + pagina + ' · ' + $('titulo').textContent + ' · Coplario';
+    $('num').disabled = $('zoom').disabled = false;
+    $('num').value = pagina; $('ant').disabled = pagina <= tramo[0]; $('sig').disabled = pagina >= tramo[1];
+    $('hoja').hidden = false; $('error').hidden = true;
+    $('img').alt = 'Página ' + pagina + ' del PDF de ' + $('titulo').textContent;
+    $('img').src = ruta(codigo, pagina);
+    $('pie').textContent = (fuera ? 'La página ' + fuera + ' no se publica: se muestra la más cercana. ' : '')
+      + 'Imagen de la página ' + pagina + ' del PDF (se publican las páginas ' + tramo[0] + ' a ' + tramo[1] + ' de este libro)'
+      + (f.procedencia_digital ? '. Digitalización: ' + f.procedencia_digital : '') + '. Con las teclas ← y → se pasa de página.';
+    fuera = 0;
+    for (const d of [-1, 1]) if (pagina + d >= tramo[0] && pagina + d <= tramo[1]) new Image().src = ruta(codigo, pagina + d);
+  }
+  const ir = p => { if (codigo && tramo && p >= tramo[0] && p <= tramo[1]) location.replace('#' + codigo + '/' + p); };
+  $('img').onerror = () => { $('hoja').hidden = true; $('error').hidden = false; $('error').textContent = 'No se encontró la imagen de esta página.'; };
+  $('ant').onclick = () => ir(pagina - 1);
+  $('sig').onclick = () => ir(pagina + 1);
+  $('num').onchange = () => ir(+$('num').value);
+  const ampliar = () => { const g = $('hoja').classList.toggle('grande'); $('zoom').setAttribute('aria-pressed', g); $('zoom').textContent = g ? 'Ajustar' : 'Ampliar'; };
+  $('zoom').onclick = ampliar;
+  $('hoja').onclick = ampliar;
+  document.addEventListener('keydown', e => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.key === 'ArrowLeft') ir(pagina - 1);
+    if (e.key === 'ArrowRight') ir(pagina + 1);
+  });
+})();
+</script>
+</body>
+</html>
