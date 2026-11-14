@@ -51,6 +51,7 @@ a { color: var(--enlace); }
 .cab-nav a, .cab-nav button { background: none; border: 0; color: var(--tierra-texto); text-decoration: none; padding: 8px 11px; border-radius: 8px; cursor: pointer; font-size: 16px; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .cab-nav a:hover, .cab-nav button:hover { background: rgba(255, 255, 255, .1); }
 .cab-nav svg { display: block; }
+.cab-nav .corto { display: none; }
 .opciones { grid-column: 2; background: var(--panel); color: var(--tinta); border-radius: 10px; padding: 10px 14px; font-size: 15px; display: grid; gap: 6px; }
 .opciones p { margin: 0; color: var(--suave); }
 .opciones label { display: flex; gap: 8px; align-items: center; cursor: pointer; min-height: 30px; }
@@ -214,7 +215,15 @@ small { color: var(--suave); }
 .error { padding: 40px 16px; color: var(--suave); }
 
 @media (max-width: 860px) {
-  .cab-in { grid-template-columns: minmax(0, 1fr) auto; padding: 8px 12px; gap: 8px 10px; }
+  /* En celular el encabezado es flexible: si el nombre y los botones no entran en un renglón
+     (pantalla angosta o letra del teléfono agrandada), los botones bajan en vez de encimarse. */
+  .cab-in { display: flex; flex-wrap: wrap; align-items: center; padding: 8px 12px; gap: 6px 8px; }
+  .marca { flex: 0 0 auto; margin-right: auto; }
+  .cab-nav { flex: 0 1 auto; flex-wrap: wrap; gap: 0; }
+  .buscador { flex: 1 0 100%; order: 3; }
+  .opciones { flex: 1 0 100%; order: 4; }
+  .cab-nav .largo { display: none; }
+  .cab-nav .corto { display: inline; }
   .marca p { display: none; }
   .creditos .redes { display: none; }
   .creditos { font-size: 14px; padding: 6px 10px; gap: 2px 14px; }
