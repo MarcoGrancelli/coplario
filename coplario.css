@@ -40,6 +40,8 @@ a { color: var(--enlace); }
 .marca img { flex: none; display: block; }
 .marca h1 { font: 700 26px/1 var(--verso); margin: 0; letter-spacing: .01em; }
 .marca p { margin: 3px 0 0; font-size: 13.5px; line-height: 1.2; color: var(--tierra-suave); }
+/* el crédito de Marco, siempre a la vista bajo el nombre */
+.marca .credito { margin-top: 2px; font: italic 400 14.5px/1.2 var(--verso); color: #e9b24f; }
 .buscador { display: flex; background: var(--panel); border-radius: 10px; overflow: hidden; border: 2px solid transparent; }
 .buscador:focus-within { border-color: var(--ocre); }
 .buscador input { flex: 1; min-width: 0; border: 0; background: none; padding: 9px 14px; font-size: 17px; color: var(--tinta); outline: none; }
@@ -84,6 +86,9 @@ aside { position: sticky; top: 86px; align-self: start; max-height: calc(100vh -
 .opcion .n { color: var(--suave); font-variant-numeric: tabular-nums; font-size: 14px; }
 .opcion.cero, .opcion.cero .n { color: var(--atenuado); }
 .bandera { vertical-align: -2px; margin-right: 8px; border-radius: 2px; }
+/* signos de los temas: figuras de punto de tejido, en una sola tinta (22 px = 2 px por punto) */
+.signo { vertical-align: -6px; margin-right: 9px; fill: var(--accion); shape-rendering: crispEdges; }
+.chip .signo { width: 16.5px; height: 16.5px; margin-right: 6px; vertical-align: -4px; fill: currentColor; shape-rendering: auto; }
 .autor { font: italic 400 .88em var(--verso); color: var(--suave); }
 .nota { font-size: 14px; color: var(--suave); margin: 4px 0 0; line-height: 1.4; }
 .modo-rima { display: flex; margin-bottom: 8px; border: 1px solid var(--borde); border-radius: 9px; overflow: hidden; background: var(--panel); }
@@ -179,13 +184,7 @@ aside { position: sticky; top: 86px; align-self: start; max-height: calc(100vh -
 .pie a { color: var(--tierra-texto); }
 .pie .redes { margin-left: auto; }
 .pie-in { padding-right: 76px; }       /* lugar para el botón de volver arriba */
-/* franja de créditos: a la vista al entrar, se va al empezar a bajar */
-.creditos { position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; background: var(--tierra); color: var(--tierra-suave); border-top: 1px solid var(--tierra-borde);
-  font-size: 14.5px; padding: 7px 16px; display: flex; flex-wrap: wrap; gap: 2px 22px; justify-content: center; align-items: center; transition: transform .28s ease; }
-.creditos.fuera { transform: translateY(110%); }
-body.cargando .pie { display: none; }      /* mientras cargan las coplas, solo la franja */
-.creditos b { color: var(--tierra-texto); font: 700 16px var(--verso); }
-.creditos a { color: var(--tierra-texto); }
+body.cargando .pie { display: none; }      /* el pie aparece cuando las coplas ya cargaron */
 
 /* páginas de texto (acerca) y visor */
 .pagina { max-width: 1000px; width: 100%; margin: 0 auto; padding: 24px 16px 50px; flex: 1; }
@@ -224,9 +223,8 @@ small { color: var(--suave); }
   .opciones { flex: 1 0 100%; order: 4; }
   .cab-nav .largo { display: none; }
   .cab-nav .corto { display: inline; }
-  .marca p { display: none; }
-  .creditos .redes { display: none; }
-  .creditos { font-size: 14px; padding: 6px 10px; gap: 2px 14px; }
+  .marca .bajada, .marca .largo { display: none; }
+  .marca .credito { font-size: 13.5px; margin-top: 1px; }
   .marca h1 { font-size: 23px; }
   .marca img { width: 34px; height: 34px; }
   .buscador { grid-column: 1 / -1; grid-row: 2; }
