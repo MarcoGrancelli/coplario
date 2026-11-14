@@ -182,6 +182,7 @@ aside { position: sticky; top: 86px; align-self: start; max-height: calc(100vh -
 .creditos { position: fixed; left: 0; right: 0; bottom: 0; z-index: 7; background: var(--tierra); color: var(--tierra-suave); border-top: 1px solid var(--tierra-borde);
   font-size: 14.5px; padding: 7px 16px; display: flex; flex-wrap: wrap; gap: 2px 22px; justify-content: center; align-items: center; transition: transform .28s ease; }
 .creditos.fuera { transform: translateY(110%); }
+body.cargando .pie { display: none; }      /* mientras cargan las coplas, solo la franja */
 .creditos b { color: var(--tierra-texto); font: 700 16px var(--verso); }
 .creditos a { color: var(--tierra-texto); }
 

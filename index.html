@@ -13,9 +13,9 @@
 <script>try { document.documentElement.dataset.theme = JSON.parse(localStorage.getItem('compartida:coplas-tema')) || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,700;1,400&family=Alegreya+Sans:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="coplario.css?v=fe1af8c3">
+<link rel="stylesheet" href="coplario.css?v=26bf6f40">
 </head>
-<body>
+<body class="cargando">
 <header class="cab">
   <div class="cab-in">
     <a class="marca" href="index.html" id="inicio" title="Volver al inicio">
@@ -683,6 +683,7 @@ window.COPLAS_ARRANCAR = function () {
     const faltan = resultados.length - mostrados;
     $('cargarMas').hidden = faltan <= 0;
     $('cargarMas').textContent = `Mostrar más (quedan ${num(faltan)})`;
+    ajustarCreditos();      // con pocos resultados el pie queda a la vista y la franja sobra
   }
   $('cargarMas').addEventListener('click', pintarMas);
 
@@ -785,10 +786,15 @@ window.COPLAS_ARRANCAR = function () {
     raiz.dataset.theme = raiz.dataset.theme === 'dark' ? 'light' : 'dark';
     guardar('coplas-tema', raiz.dataset.theme);
   });
-  window.addEventListener('scroll', () => {
-    $('subir').hidden = window.scrollY < 900;
-    $('creditos').classList.toggle('fuera', window.scrollY > 60);
-  }, { passive: true });
+  // La franja de créditos se ve al entrar y se va al empezar a bajar. Tampoco se muestra
+  // cuando el pie completo ya está a la vista (página corta), para que no se vean los dos juntos.
+  const pie = document.querySelector('.pie');
+  function ajustarCreditos() {
+    const pieALaVista = pie.offsetParent !== null && pie.getBoundingClientRect().top < window.innerHeight;
+    $('creditos').classList.toggle('fuera', window.scrollY > 60 || pieALaVista);
+  }
+  window.addEventListener('scroll', () => { $('subir').hidden = window.scrollY < 900; ajustarCreditos(); }, { passive: true });
+  window.addEventListener('resize', ajustarCreditos);
   $('subir').addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
 
   // ---------- arranque ----------
@@ -799,6 +805,7 @@ window.COPLAS_ARRANCAR = function () {
   if (estado.pv) bloques.get('pv').open = true;
   FACETAS.forEach(F => { if (!comoAlAbrir(F)) bloques.get(F.clave).open = true; });
   $('carga').remove(); $('app').hidden = false;
+  document.body.classList.remove('cargando');      // recién ahora se muestra el pie
   calcular();
 };
 </script>
