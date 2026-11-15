@@ -5,9 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Coplario: explorador de coplas tradicionales</title>
 <meta name="author" content="Marco Grancelli">
-<meta name="description" content="Explorador de coplas tradicionales: 42.030 coplas de España y América para buscar por palabra, rima, país y tema. Cada una con su fuente: libro, autor, año y página.">
+<meta name="description" content="Explorador de coplas tradicionales: 42.015 coplas de España y América para buscar por palabra, rima, país y tema. Cada una con su fuente: libro, autor, año y página.">
 <meta property="og:title" content="Coplario: explorador de coplas tradicionales">
-<meta property="og:description" content="42.030 coplas tradicionales de España y América, cada una con su fuente.">
+<meta property="og:description" content="42.015 coplas tradicionales de España y América, cada una con su fuente.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Coplario">
 <meta property="og:locale" content="es_AR">
@@ -22,7 +22,7 @@
 <script>try { document.documentElement.dataset.theme = JSON.parse(localStorage.getItem('compartida:coplas-tema')) || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,700;1,400&family=Alegreya+Sans:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="coplario.css?v=9c6d9d95">
+<link rel="stylesheet" href="coplario.css?v=d434f194">
 </head>
 <body class="cargando">
 <header class="cab">
@@ -131,7 +131,7 @@
 // Con etiquetas <script> en vez de fetch, así la carpeta también se abre desde el disco.
 (function () {
   "use strict";
-  const V = '72544da1ee', BASE = '';
+  const V = 'ff7d798601', BASE = '';
   const carga = () => document.getElementById('carga');
   const cargarScript = src => new Promise((ok, mal) => {
     const s = document.createElement('script');
@@ -291,16 +291,27 @@ window.COPLAS_ARRANCAR = function () {
 
   // Coplario publica solo las coplas sin dudas de transcripción, y no publica los textos
   // sin clasificar (decisión de Marco, 13 nov 2026). porI: copla por su posición en los datos.
+  // ---- MULETILLAS (inicio): copia de marcas.mjs, la controla probar_marcas.mjs ----
+  // texto lleva las marcas [[...]] de la forma cantada; la copla pura (sin ellas) es la que se busca y se mide
+  const RE_MARCA = /\[\[(.*?)\]\]/g;
+  const quitarMarcas = v => v.includes('[[') ? v.replace(RE_MARCA, '').replace(/\s{2,}/g, ' ').trim() : v;
+  const sinLetras = v => !/[\p{L}\p{N}]/u.test(v);
+  const versosPuros = vs => vs.map(quitarMarcas).filter((v, i) => !vs[i].includes('[[') || !sinLetras(v));
+  const textoPuro = t => t.includes('[[') ? versosPuros(t.split('\n')).join('\n') : t;
+  const marcasComo = (t, a, b) => t.replace(RE_MARCA, (_, x) => a + x + b);
+  const sinCorchetes = t => t.replace(RE_MARCA, '$1');
+  // ---- MULETILLAS (fin) ----
+
   const R = [], porI = [];
   D.registros.forEach((r, i) => {
     const tipo = deDic('tipo', r[col.tipo]);
     if (r[col.nivel] !== 0 || /^bloque de/.test(tipo)) return;
-    const texto = r[col.texto];
+    const texto = r[col.texto], puro = textoPuro(texto);
     const pais = deDic('pais', r[col.pais]), seccion = deDic('seccion', r[col.seccion]), titulo = tituloDeCancion(r[col.titulo]);
     const numero = r[col.numero], pagina = r[col.pagina];
     const tramo = (D.paginas || {})[D.fuentes[r[col.fuente]].codigo];
     const o = {
-      i, id: r[col.id], f: r[col.fuente], texto, pais: pais || 'sin determinar', region: deDic('region', r[col.region]), seccion, titulo,
+      i, id: r[col.id], f: r[col.fuente], texto, puro, marcado: puro !== texto, agregados: r[col.agregados] || '', pais: pais || 'sin determinar', region: deDic('region', r[col.region]), seccion, titulo,
       tema: r[col.seccion] >= 0 ? TEMAS[r[col.seccion]] || null : null,
       cita: deDic('citaBase', r[col.citaBase]) + (numero ? ', ' + (/^Ap\.\s*/.test(numero) ? `Apéndice, canción n.º ${numero.replace(/^Ap\.\s*/, '')}` : `n.º ${numero}`) : '') + ', ' + pagTexto(pagina, r[col.paginaFin]),
       tipo, forma: forma(tipo), versos: r[col.versos], rima: r[col.rima],
@@ -308,7 +319,7 @@ window.COPLAS_ARRANCAR = function () {
       pagina, conPagina: !!(tramo && pagina >= tramo[0] && pagina <= tramo[1]),
       autoria: deDic('autoria', r[col.autoria]), repetidaEn: r[col.repetidaEn], original: '', procedencia: '',
       mismo: 1, revisada: r[col.revisada] === 1,
-      n: ' ' + norm(texto) + ' ', nExtra: ' ' + norm(titulo + ' ' + seccion) + ' ', pv: norm(texto.split('\n')[0]),
+      n: ' ' + norm(puro) + ' ', nExtra: ' ' + norm(titulo + ' ' + seccion) + ' ', pv: norm(puro.split('\n')[0]),
     };
     porI[i] = o; R.push(o);
   });
@@ -636,7 +647,29 @@ window.COPLAS_ARRANCAR = function () {
   });
 
   // ---------- tarjetas ----------
-  const textoParaCopiar = r => r.texto + '\n' + r.cita;
+  // muletillas: por defecto se ve la copla pura; el botón "Ver muletillas" de cada ficha que las tiene
+  // las muestra en su lugar (marcas [[...]]) o debajo de la copla (las que el libro dejó en las notas)
+  const mulVisibles = new Set();
+  const tieneMul = r => r.marcado || !!r.agregados;
+  function pintarMarcas(texto, resaltar) {
+    let sal = '', i = 0;
+    for (const m of texto.matchAll(RE_MARCA)) {
+      sal += resaltar(texto.slice(i, m.index)) + `<span class="mote">${esc(m[1])}</span>`;
+      i = m.index + m[0].length;
+    }
+    return sal + resaltar(texto.slice(i));
+  }
+  function htmlCuerpo(r, resaltar) {
+    const ver = mulVisibles.has(r.i);
+    return `<div class="versos">${ver && r.marcado ? pintarMarcas(r.texto, resaltar) : resaltar(r.puro)}</div>`
+      + (ver && r.agregados ? `<div class="agregados">${esc(r.agregados)}</div>` : '');
+  }
+  // lo que se está viendo, como texto: la pura, o con los agregados entre paréntesis
+  function textoVisible(r) {
+    if (!mulVisibles.has(r.i)) return r.puro;
+    return marcasComo(r.texto, '(', ')') + (r.agregados ? '\n' + r.agregados.split('\n').map(l => `(${l})`).join('\n') : '');
+  }
+  const textoParaCopiar = r => textoVisible(r) + '\n' + r.cita;
   const enlaceDe = r => location.href.split('#')[0] + '#copla=' + encodeURIComponent(r.id);
   function visorDe(r) {
     const tramo = (D.paginas || {})[fuentes[r.f].codigo];
@@ -663,7 +696,7 @@ window.COPLAS_ARRANCAR = function () {
       CONTACTO ? `<a href="mailto:${esc(CONTACTO)}?subject=${encodeURIComponent(asuntoError(r))}&body=${encodeURIComponent(cuerpoError(r))}">Avisar un error con otro correo</a>` : '',
     ].join('');
     return `<article class="copla" data-i="${r.i}">
-      <div class="versos">${resaltar(r.texto)}</div>
+      <div class="texto-copla">${htmlCuerpo(r, resaltar)}</div>
       <details class="fuente"${abierta ? ' open' : ''}>
         <summary><span class="cita">${esc(citaCorta(r))}</span><span class="mas-datos"></span></summary>
         <p class="cita">${esc(r.cita)}</p>
@@ -682,6 +715,7 @@ window.COPLAS_ARRANCAR = function () {
       <div class="botones">
         <button type="button" data-accion="copiar">${ICONO.copiar}Copiar</button>
         <button type="button" data-accion="compartir">${ICONO.compartir}Compartir</button>
+        ${tieneMul(r) ? `<button type="button" class="mulet" data-accion="mulet" aria-pressed="${mulVisibles.has(r.i)}" title="Muletillas, motes y versos repetidos de la forma cantada">${mulVisibles.has(r.i) ? 'Ocultar muletillas' : 'Ver muletillas'}</button>` : ''}
         ${visor ? `<a href="${visor}" target="_blank" rel="noopener" title="Abre la página ${r.pagina} del libro, tal como está impresa">${ICONO.pagina}Ver en el libro</a>` : ''}
         ${mas ? `<details class="menu"><summary aria-label="Más acciones">Más</summary><div class="menu-lista">${mas}</div></details>` : ''}
       </div>
@@ -730,6 +764,12 @@ window.COPLAS_ARRANCAR = function () {
     }
     const boton = e.target.closest('[data-accion]'); if (!boton) return;
     const accion = boton.dataset.accion;
+    if (accion === 'mulet') {
+      const ver = !mulVisibles.has(r.i);
+      ver ? mulVisibles.add(r.i) : mulVisibles.delete(r.i);
+      art.querySelector('.texto-copla').innerHTML = htmlCuerpo(r, resaltador());
+      boton.setAttribute('aria-pressed', ver); boton.textContent = ver ? 'Ocultar muletillas' : 'Ver muletillas';
+    }
     if (accion === 'copiar') aviso(await copiar(textoParaCopiar(r)) ? 'Copla copiada con su fuente' : 'No se pudo copiar');
     if (accion === 'compartir') {
       const url = enlaceDe(r);
@@ -738,7 +778,7 @@ window.COPLAS_ARRANCAR = function () {
       } else aviso(await copiar(url) ? 'Enlace a esta copla copiado' : 'No se pudo copiar el enlace');
     }
     if (accion === 'pv') {
-      estado.copla = ''; estado.pv = r.texto.split('\n')[0]; estado.q = '';
+      estado.copla = ''; estado.pv = r.puro.split('\n')[0]; estado.q = '';
       bloques.get('pv').open = true;
       sincronizarControles(); calcular(); window.scrollTo({ top: 0 });
     }

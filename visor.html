@@ -8,7 +8,7 @@
 <script>try { document.documentElement.dataset.theme = JSON.parse(localStorage.getItem('compartida:coplas-tema')) || 'light'; } catch (e) { document.documentElement.dataset.theme = 'light'; }</script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Alegreya:ital,wght@0,400;0,700;1,400&family=Alegreya+Sans:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="coplario.css?v=9c6d9d95">
+<link rel="stylesheet" href="coplario.css?v=d434f194">
 </head>
 <body>
 <header class="cab">
@@ -45,7 +45,7 @@
   let I, codigo, pagina, tramo, fuera = 0;
   window.COPLAS_INDICE = d => { I = d; };
   const s = document.createElement('script');
-  s.src = BASE + 'datos/indice.js?v=72544da1ee';
+  s.src = BASE + 'datos/indice.js?v=ff7d798601';
   s.onload = () => { window.addEventListener('hashchange', leerHash); leerHash(); };
   s.onerror = () => { $('titulo').textContent = 'No se pudo cargar la lista de libros.'; };
   document.head.appendChild(s);

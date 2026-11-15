@@ -142,6 +142,10 @@ aside { position: sticky; top: 86px; align-self: start; max-height: calc(100vh -
 .versos { font: 400 20px/1.5 var(--verso); white-space: pre-line; overflow-wrap: anywhere; }
 .una .versos { font-size: 25px; }
 .versos mark { background: var(--marca); color: inherit; border-radius: 3px; padding: 0 2px; }
+/* muletillas, motes y versos repetidos de la forma cantada: se ven solo con el botón "Ver muletillas" */
+.versos .mote { font-style: italic; font-size: .88em; color: var(--suave); }
+.agregados { font: italic 400 17.5px/1.5 var(--verso); color: var(--suave); white-space: pre-line; overflow-wrap: anywhere; margin-top: 6px; }
+.botones > button.mulet[aria-pressed="true"] { background: var(--accion-suave); }
 .cita { margin: 0; font: italic 400 15.5px/1.4 var(--verso); color: var(--suave); overflow-wrap: anywhere; }
 /* la fuente: un renglón que se despliega */
 .fuente > summary { list-style: none; cursor: pointer; }
