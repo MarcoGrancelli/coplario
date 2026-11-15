@@ -45,7 +45,7 @@
   let I, codigo, pagina, tramo, fuera = 0;
   window.COPLAS_INDICE = d => { I = d; };
   const s = document.createElement('script');
-  s.src = BASE + 'datos/indice.js?v=222531d60d';
+  s.src = BASE + 'datos/indice.js?v=72544da1ee';
   s.onload = () => { window.addEventListener('hashchange', leerHash); leerHash(); };
   s.onerror = () => { $('titulo').textContent = 'No se pudo cargar la lista de libros.'; };
   document.head.appendChild(s);
