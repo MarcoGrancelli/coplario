@@ -2,11 +2,11 @@
 // El pixel NO se carga hasta que la persona toca "Aceptar"; si toca "Rechazar" no se carga nunca.
 // La respuesta se guarda en este navegador (localStorage "coplario:cookies" = "si" o "no").
 // En privacidad.html se puede cambiar: botones con data-cookies="si" / "no" y un #estadoCookies.
-// 1483054440455392 lo completa construir_demo_coplario.mjs (constante PIXEL_META). Si queda vacío,
+// 1483054440455392,1629189299010696 lo completa construir_demo_coplario.mjs (constante PIXEL_META). Si queda vacío,
 // no se muestra el aviso ni se carga nada.
 (function () {
   // uno o varios pixeles separados por coma (Coplario y Tikismikis)
-  var PIXELES = '1483054440455392'.split(',').filter(Boolean);
+  var PIXELES = '1483054440455392,1629189299010696'.split(',').filter(Boolean);
   var CLAVE = 'coplario:cookies';
   if (!PIXELES.length) return;
 
