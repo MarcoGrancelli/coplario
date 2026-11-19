@@ -5,9 +5,10 @@
 // 1483054440455392 lo completa construir_demo_coplario.mjs (constante PIXEL_META). Si queda vacío,
 // no se muestra el aviso ni se carga nada.
 (function () {
-  var PIXEL = '1483054440455392';
+  // uno o varios pixeles separados por coma (Coplario y Tikismikis)
+  var PIXELES = '1483054440455392'.split(',').filter(Boolean);
   var CLAVE = 'coplario:cookies';
-  if (!PIXEL) return;
+  if (!PIXELES.length) return;
 
   function leer() { try { return localStorage.getItem(CLAVE); } catch (e) { return null; } }
   function guardar(v) { try { localStorage.setItem(CLAVE, v); } catch (e) { /* sin almacenamiento: se vuelve a preguntar */ } }
@@ -23,8 +24,8 @@
       t = b.createElement(e); t.async = !0; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
     }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
     window.fbq('consent', 'grant');
-    window.fbq('init', PIXEL);
-    window.fbq('track', 'PageView');
+    PIXELES.forEach(function (id) { window.fbq('init', id); });
+    window.fbq('track', 'PageView');   // se manda a todos los pixeles iniciados
   }
 
   // _fbp y _fbc son las cookies que el pixel deja en este dominio: se borran al rechazar
@@ -60,7 +61,7 @@
     aviso.setAttribute('role', 'region');
     aviso.setAttribute('aria-label', 'Aviso de cookies');
     aviso.innerHTML =
-      '<p>Este sitio utiliza cookies de terceros con fines publicitarios. <a href="privacidad.html">Más información</a></p>' +
+      '<p>Este sitio utiliza cookies de terceros para personalizar contenidos. <a href="privacidad.html">Más información</a></p>' +
       '<div class="cookies-botones"><button type="button" class="btn" data-cookies="no">Rechazar</button><button type="button" class="btn" data-cookies="si">Aceptar</button></div>';
     document.body.appendChild(aviso);
   }
